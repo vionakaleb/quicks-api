@@ -1,13 +1,34 @@
 const express = require("express");
 const router = express.Router();
 
-module.exports = (supabase, dayjs) => {
+module.exports = (supabase, model, dayjs) => {
+  const getAllConversations = () => {
+    return supabase.from("conversations").select("*").order("id");
+  };
+
+  const searchConversations = (query) => {
+    return supabase
+      .from("conversations")
+      .select("*")
+      .or(`title.ilike.%${query}%,messages.plfts.${query}`)
+      .order("id");
+  };
+
   // GET ALL CHATS
   router.get("/", async (req, res) => {
-    const { data, error } = await supabase
-      .from("conversations") // Note: Table name is 'conversations'
-      .select("*")
-      .order("id");
+    const { data, error } = await getAllConversations();
+
+    if (error) return res.status(500).json({ error: error.message });
+    res.json(data);
+  });
+
+  // SEARCH CHATS
+  router.get("/search", async (req, res) => {
+    const { query } = req.query;
+    console.log(query, "query");
+
+    const promise = query ? searchConversations(query) : getAllConversations();
+    const { data, error } = await promise;
 
     if (error) return res.status(500).json({ error: error.message });
     res.json(data);
@@ -48,7 +69,7 @@ module.exports = (supabase, dayjs) => {
 
     const { data, error } = await supabase
       .from("conversations")
-      .insert([{ id: Date.now().toString(), title: finalTitle, messages: [] }])
+      .insert([{ id: dayjs().unix().toString(), title: finalTitle, messages: [] }])
       .select();
 
     if (error) return res.status(500).json({ error: error.message });
@@ -117,13 +138,9 @@ module.exports = (supabase, dayjs) => {
 
     // Generate new message object
     const userMessage = {
-      id: Date.now().toString(),
+      id: dayjs().unix().toString(),
       content,
-      timestamp: new Date().toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit",
-        hour12: false,
-      }),
+      timestamp: dayjs().format("HH:mm"),
       sender: "me",
       replyTo: replyTo || null,
       replyToContext,
@@ -143,13 +160,9 @@ module.exports = (supabase, dayjs) => {
       const aiContent = await result.response.text();
 
       aiMessage = {
-        id: `${Date.now()}-ai`, // Ensure a unique ID
+        id: `${dayjs().unix().toString()}-ai`,
         content: aiContent,
-        timestamp: new Date().toLocaleTimeString([], {
-          hour: "2-digit",
-          minute: "2-digit",
-          hour12: false,
-        }),
+        timestamp: dayjs().format("HH:mm"),
         sender: "ai-agent",
         replyTo: userMessage.id,
       };
@@ -169,7 +182,7 @@ module.exports = (supabase, dayjs) => {
       .update({
         messages: updatedMessages,
         lastMessage: aiMessage.content,
-        lastMessageDate: new Date().toISOString(),
+        lastMessageDate: dayjs().unix().toString(),
       })
       .eq("id", id);
 

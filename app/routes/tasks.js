@@ -48,7 +48,7 @@ module.exports = (supabase, dayjs) => {
       newCounter === 1 ? baseTitle : `${baseTitle} ${newCounter}`;
 
     const newTask = {
-      id: Date.now().toString(),
+      id: dayjs().unix().toString(),
       title: finalTitle,
       description: "",
       date: dayjs().format("YYYY-MM-DD"),
@@ -58,10 +58,9 @@ module.exports = (supabase, dayjs) => {
 
     // Calculate remaining days
     if (newTask.date) {
-      const targetDate = new Date(newTask.date);
-      const currentDate = new Date();
-      const timeDiff = targetDate.getTime() - currentDate.getTime();
-      newTask.daysLeft = Math.ceil(timeDiff / (1000 * 3600 * 24));
+      const targetDate = dayjs(newTask.date).startOf("day");
+      const currentDate = dayjs().startOf("day");
+      newTask.daysLeft = targetDate.diff(currentDate, "day");
     }
 
     const { data, error } = await supabase
@@ -88,15 +87,11 @@ module.exports = (supabase, dayjs) => {
     if (date !== undefined) {
       updates.date = date;
 
-      const targetDate = new Date(date);
-      const currentDate = new Date();
-
       // Reset time part to compare dates
-      targetDate.setHours(0, 0, 0, 0);
-      currentDate.setHours(0, 0, 0, 0);
-
-      const timeDiff = targetDate.getTime() - currentDate.getTime();
-      updates.daysLeft = Math.ceil(timeDiff / (1000 * 3600 * 24));
+      const targetDate = dayjs(date).startOf("day");
+      const currentDate = dayjs().startOf("day");
+      
+      updates.daysLeft = targetDate.diff(currentDate, "day");
     }
 
     const { data, error } = await supabase

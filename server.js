@@ -25,7 +25,7 @@ const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
 
 // API Routes
 const tasksRouter = require("./app/routes/tasks")(supabase, dayjs);
-const chatsRouter = require("./app/routes/chats")(supabase, model);
+const chatsRouter = require("./app/routes/chats")(supabase, model, dayjs);
 
 app.use("/tasks", tasksRouter);
 app.use("/chats", chatsRouter);
