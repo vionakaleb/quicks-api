@@ -2,6 +2,7 @@ const express = require("express");
 const cors = require("cors");
 const bodyParser = require("body-parser");
 const { createClient } = require("@supabase/supabase-js");
+const serverless = require("serverless-http");
 
 const dayjs = require("dayjs");
 const { GoogleGenerativeAI } = require("@google/generative-ai");
@@ -9,7 +10,6 @@ const { GoogleGenerativeAI } = require("@google/generative-ai");
 require("dotenv").config();
 
 const app = express();
-const PORT = 3001;
 
 app.use(cors());
 app.use(bodyParser.json());
@@ -24,19 +24,16 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
 
 // API Routes
-const tasksRouter = require("./app/routes/tasks")(supabase, dayjs);
-const chatsRouter = require("./app/routes/chats")(supabase, model, dayjs);
+const tasksRouter = require("../../app/routes/tasks")(supabase, dayjs);
+const chatsRouter = require("../../app/routes/chats")(supabase, model, dayjs);
 
-app.use("/tasks", tasksRouter);
-app.use("/chats", chatsRouter);
+const router = express.Router();
+router.use("/tasks", tasksRouter);
+router.use("/chats", chatsRouter);
+app.use("/.netlify/functions/api", router);
 
-const server = app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
-});
-
-server.on("error", (err) => {
-  console.error("Server error:", err);
-});
+// app.use("/tasks", tasksRouter);
+// app.use("/chats", chatsRouter);
 
 process.on("unhandledRejection", (reason, promise) => {
   console.error("Unhandled Rejection at:", promise, "reason:", reason);
@@ -46,4 +43,4 @@ process.on("uncaughtException", (err, origin) => {
   console.error("Uncaught Exception:", err, "Origin:", origin);
 });
 
-export const handler = serverless(app);
+module.exports.handler = serverless(app);
