@@ -5,11 +5,14 @@ Built with Express.js, backed by Supabase (PostgreSQL), and deployed as a server
 
 ## 🔗 URL
 
-Live Demo: Deployed on Netlify
+🚀 Live Demo: Deployed on Netlify
 [https://quicks-app-vk.netlify.app/](https://quicks-app-vk.netlify.app/)
 
-FE repo:
-[https://github.com/vionakaleb/quicks-app.git](https://github.com/vionakaleb/quicks-api.git)
+📂 FE repo:
+[https://github.com/vionakaleb/quicks-app.git](https://github.com/vionakaleb/quicks-app.git)
+
+📂 BE repo:
+[https://github.com/vionakaleb/quicks-api.git](https://github.com/vionakaleb/quicks-api.git)
 
 ## ✨ Features
 
