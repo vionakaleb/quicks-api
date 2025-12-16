@@ -1,5 +1,6 @@
 {
   "name": "quicks-api",
+  "author": "Viona Kaleb <vionakaleb@gmail.com>(https://vionakaleb.github.io/me)",
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
@@ -7,7 +8,6 @@
     "build": "# No build step needed"
   },
   "keywords": [],
-  "author": "",
   "license": "ISC",
   "description": "",
   "dependencies": {
