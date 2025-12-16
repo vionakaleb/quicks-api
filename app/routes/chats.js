@@ -44,7 +44,6 @@ module.exports = (supabase, model, dayjs) => {
   // SEARCH CHATS
   router.get("/search", async (req, res) => {
     const { query } = req.query;
-    console.log(query, "query");
 
     const promise = query ? searchConversations(query) : getAllConversations();
     const { data, error } = await promise;
