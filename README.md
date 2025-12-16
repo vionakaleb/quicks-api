@@ -5,8 +5,7 @@ Built with Express.js, backed by Supabase (PostgreSQL), and deployed as a server
 
 ## 🔗 Base URL
 
-All API requests should be prefixed with the following base URL:
-
+API requests is prefixed with the following base URL:
 [https://quicks-api-vk.netlify.app/.netlify/functions/api](https://quicks-api-vk.netlify.app/.netlify/functions/api)
 
 ## 🛠 Tech Stack
