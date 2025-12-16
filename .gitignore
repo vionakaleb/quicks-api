@@ -29,3 +29,5 @@ yarn-error.log*
 # DEPLOY TO PROD
 
 # netlify deploy --prod
+
+# BASE_URL=https://quicks-api-vk.netlify.app/.netlify/functions/api
