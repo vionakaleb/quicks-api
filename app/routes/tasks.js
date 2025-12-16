@@ -51,7 +51,7 @@ module.exports = (supabase, dayjs) => {
       id: dayjs().unix().toString(),
       title: finalTitle,
       description: "",
-      date: dayjs().format("YYYY-MM-DD"),
+      date: "",
       tags: ["New"],
       completed: false,
     };
@@ -90,7 +90,7 @@ module.exports = (supabase, dayjs) => {
       // Reset time part to compare dates
       const targetDate = dayjs(date).startOf("day");
       const currentDate = dayjs().startOf("day");
-      
+
       updates.daysLeft = targetDate.diff(currentDate, "day");
     }
 

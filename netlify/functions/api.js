@@ -45,3 +45,5 @@ process.on("unhandledRejection", (reason, promise) => {
 process.on("uncaughtException", (err, origin) => {
   console.error("Uncaught Exception:", err, "Origin:", origin);
 });
+
+export const handler = serverless(app);

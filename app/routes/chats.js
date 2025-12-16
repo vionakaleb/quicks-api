@@ -10,8 +10,27 @@ module.exports = (supabase, model, dayjs) => {
     return supabase
       .from("conversations")
       .select("*")
-      .or(`title.ilike.%${query}%,messages.plfts.${query}`)
+      .or(`title.ilike.%${query}%,lastMessage.ilike.${query}`)
       .order("id");
+  };
+
+  const getParticipants = (messages) => {
+    const participants = [...new Set(messages.map((msg) => msg.sender))];
+
+    const formatName = participants.map((participant) => {
+      if (participant === "ai-agent") return "AI Agent";
+      if (participant === "me") return "Me";
+
+      return participant
+        .replace(/-/g, " ") // Replace hyphens with spaces
+        .replace(/\b\w/g, (char) => char.toUpperCase()); // Capitalize first letter
+    });
+
+    return {
+      participants,
+      participantList: formatName.join(", "),
+      count: participants.length,
+    };
   };
 
   // GET ALL CHATS
@@ -69,7 +88,16 @@ module.exports = (supabase, model, dayjs) => {
 
     const { data, error } = await supabase
       .from("conversations")
-      .insert([{ id: dayjs().unix().toString(), title: finalTitle, messages: [] }])
+      .insert([
+        {
+          id: dayjs().unix().toString(),
+          title: finalTitle,
+          messages: [],
+          isUnread: true,
+          lastMessage: "AI: To start chatting with AI",
+          lastMessageDate: dayjs().format("YYYY-MM-DD HH:mm"),
+        },
+      ])
       .select();
 
     if (error) return res.status(500).json({ error: error.message });
@@ -99,7 +127,28 @@ module.exports = (supabase, model, dayjs) => {
 
     const { data, error } = await supabase
       .from("conversations")
-      .update({ messages: [], lastMessage: null, lastMessageDate: null })
+      .update({
+        messages: [],
+        lastMessage: "Open to start conversation",
+        lastMessageDate: dayjs().format("YYYY-MM-DD HH:mm"),
+      })
+      .eq("id", id)
+      .select("id");
+
+    if (error) return res.status(500).json({ error: error.message });
+    if (data.length === 0)
+      return res.status(404).send("Conversation not found");
+
+    res.status(204).send();
+  });
+
+  // MARK CHAT AS READ
+  router.patch("/:id/read", async (req, res) => {
+    const { id } = req.params;
+
+    const { data, error } = await supabase
+      .from("conversations")
+      .update({ isUnread: false })
       .eq("id", id)
       .select("id");
 
@@ -146,43 +195,61 @@ module.exports = (supabase, model, dayjs) => {
       replyToContext,
     };
 
-    // Prepare conversation history for Gemini
-    const history = (chat.messages || []).map((msg) => ({
-      role: msg.sender === "me" ? "user" : "model",
-      parts: [{ text: msg.content }],
-    }));
-
-    // Call Gemini for an auto-reply
+    let updatedMessages = [];
     let aiMessage;
-    try {
-      const chatSession = model.startChat({ history });
-      const result = await chatSession.sendMessage(content);
-      const aiContent = await result.response.text();
 
-      aiMessage = {
-        id: `${dayjs().unix().toString()}-ai`,
-        content: aiContent,
-        timestamp: dayjs().format("HH:mm"),
-        sender: "ai-agent",
-        replyTo: userMessage.id,
-      };
-    } catch (aiError) {
-      console.error("Gemini API Error:", aiError);
-      const statusCode = aiError.status || 500;
-      const errorMessage = aiError.message || "Failed to get AI response.";
-      return res.status(statusCode).json({ error: errorMessage });
+    if (
+      content.toLowerCase().includes("ai:") ||
+      (replyTo && replyToContext.sender.includes("ai"))
+    ) {
+      // Prepare conversation history for Gemini
+      const history = (chat.messages || []).map((msg) => ({
+        role: "user",
+        parts: [{ text: msg.content }],
+      }));
+
+      try {
+        const chatSession = model.startChat({ history });
+        const result = await chatSession.sendMessage(content);
+        const aiContent = await result.response.text();
+
+        aiMessage = {
+          id: `${dayjs().unix().toString()}-ai`,
+          content: aiContent,
+          timestamp: dayjs().format("HH:mm"),
+          sender: "ai-agent",
+          replyTo: userMessage.id,
+          isUnread: true,
+        };
+
+        await supabase
+          .from("conversations")
+          .update({ isUnread: true })
+          .eq("id", id)
+          .select("id");
+      } catch (aiError) {
+        console.error("Gemini API Error:", aiError);
+        const statusCode = aiError.status || 500;
+        const errorMessage = aiError.message || "Failed to get AI response.";
+        return res.status(statusCode).json({ error: errorMessage });
+      }
+
+      updatedMessages = [...(chat.messages || []), userMessage, aiMessage];
+    } else {
+      updatedMessages = [...(chat.messages || []), userMessage];
     }
-
-    // Append both messages to database
-    const updatedMessages = [...(chat.messages || []), userMessage, aiMessage];
 
     // Update database
     const { error: updateError } = await supabase
       .from("conversations")
       .update({
+        title: getParticipants(updatedMessages).participantList,
         messages: updatedMessages,
-        lastMessage: aiMessage.content,
-        lastMessageDate: dayjs().unix().toString(),
+        lastMessage: aiMessage?.id
+          ? `**${aiMessage?.sender}**: ${aiMessage?.content}`
+          : `**${userMessage?.sender}**: \n${content}`,
+        lastMessageDate: dayjs().format("YYYY-MM-DD HH:mm"),
+        participantCount: getParticipants(updatedMessages).count,
       })
       .eq("id", id);
 
@@ -235,6 +302,94 @@ module.exports = (supabase, model, dayjs) => {
       return res.status(500).json({ error: updateError.message });
 
     res.json(updatedMessage);
+  });
+
+  // INVITE TO CHAT
+  router.post("/:id/invite", async (req, res) => {
+    const { id } = req.params;
+    const { sender } = req.body;
+
+    // Fetch messages in chat
+    const { data: chat, error: fetchError } = await supabase
+      .from("conversations")
+      .select("messages, title")
+      .eq("id", id)
+      .single();
+
+    if (fetchError || !chat)
+      return res.status(404).send("Conversation not found");
+
+    const content = `${sender} is invited to the chat`;
+
+    const userMessage = {
+      id: dayjs().unix().toString(),
+      content,
+      timestamp: dayjs().format("HH:mm"),
+      sender: sender,
+    };
+
+    const updatedMessages = [...(chat.messages || []), userMessage];
+
+    const { error: updateError } = await supabase
+      .from("conversations")
+      .update({
+        title: getParticipants(updatedMessages).participantList,
+        messages: updatedMessages,
+        lastMessage: `**${sender}**: \n${content}`,
+        lastMessageDate: dayjs().format("YYYY-MM-DD HH:mm"),
+        participantCount: getParticipants(updatedMessages).count,
+      })
+      .eq("id", id);
+
+    if (updateError)
+      return res.status(500).json({ error: updateError.message });
+
+    res.status(201).send();
+  });
+
+  // GET PARTICIPANTS IN CHAT
+  // router.get("/:id/participants", async (req, res) => {
+  //   const { id } = req.params;
+
+  //   // Fetch messages in chat
+  //   const { data: chat, error: fetchError } = await supabase
+  //     .from("conversations")
+  //     .select("messages")
+  //     .eq("id", id)
+  //     .single();
+
+  //   if (fetchError || !chat) {
+  //     return res.status(404).send("Conversation not found");
+  //   }
+
+  //   const messages = chat.messages || [];
+  //   const participants = [...new Set(messages.map((msg) => msg.sender))];
+
+  //   res.json({
+  //     participants,
+  //     count: participants.length,
+  //   });
+  // });
+
+  // INVITE TO CHAT
+  router.patch("/:id/invite", async (req, res) => {
+    const { id } = req.params;
+
+    const { data, error } = await supabase
+      .from("conversations")
+      .update({
+        messages: [],
+        lastMessage: "Open to start conversation",
+        lastMessageDate: dayjs().format("YYYY-MM-DD HH:mm"),
+      })
+      .eq("id", id)
+      .select("id");
+
+    if (error) return res.status(500).json({ error: error.message });
+    if (data.length === 0)
+      return res.status(404).send("Conversation not found");
+
+    res.status(204).send();
   });
 
   // DELETE MESSAGE BY ID
