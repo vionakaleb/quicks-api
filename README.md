@@ -3,7 +3,6 @@
 The backend REST API service for the Quicks application, integrated with GoogleGenerativeAI Gemini for chatbot.
 Built with Express.js, backed by Supabase (PostgreSQL), and deployed as a serverless function on Netlify.
 
-
 ## 🔗 URL
 
 Live Demo: Deployed on Netlify
@@ -12,7 +11,6 @@ Live Demo: Deployed on Netlify
 FE repo:
 [https://github.com/vionakaleb/quicks-app.git](https://github.com/vionakaleb/quicks-api.git)
 
-
 ## ✨ Features
 
 💬 Real-time Chat: Seamless messaging interface for individual and group conversations.
@@ -20,7 +18,6 @@ FE repo:
 🤖 AI Assistant: Integrated chatbot powered by Google Gemini for answering queries and assisting with tasks.
 
 ✅ Task Management: Comprehensive management features allowing users to seamlessly create, modify, and remove conversations and tasks.
-
 
 ## 🛠 Tech Stack
 
@@ -33,7 +30,6 @@ Database: Supabase (PostgreSQL)
 Deployment: Netlify Functions
 
 Data Format: JSON
-
 
 ## 🗄️ Database Schema
 
@@ -65,11 +61,9 @@ messages jsonb null default '[]'::jsonb,
 constraint conversations_pkey primary key (id)
 ) TABLESPACE pg_default;
 
-
 ## 🚀 Getting Started
 
 To run this project locally, ensure you have Node.js and the Netlify CLI installed.
-
 
 ### 1. Clone the repository
 
@@ -77,11 +71,9 @@ To run this project locally, ensure you have Node.js and the Netlify CLI install
 
 `cd quicks-api`
 
-
 ### 2. Install dependencies
 
 `npm install`
-
 
 ### 3. Configure Environment
 
@@ -94,13 +86,11 @@ Create a .env file in the root directory and add your Supabase credentials:
 API requests is prefixed with the following base URL:
 [https://quicks-api-vk.netlify.app/.netlify/functions/api](https://quicks-api-vk.netlify.app/.netlify/functions/api)
 
-
 ### 4. Run locally (Netlify Dev)
 
 This emulates the Netlify Functions environment locally.
 
 `netlify dev`
-
 
 ### 5. Deploy to Netlify
 
