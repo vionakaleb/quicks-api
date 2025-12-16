@@ -94,7 +94,7 @@ module.exports = (supabase, model, dayjs) => {
           title: finalTitle,
           messages: [],
           isUnread: true,
-          lastMessage: "AI: To start chatting with AI",
+          lastMessage: "Type -> AI: To start chatting with AI",
           lastMessageDate: dayjs().format("YYYY-MM-DD HH:mm"),
         },
       ])

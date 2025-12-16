@@ -78,6 +78,10 @@ GEMINI_API_KEY=your_gemini_api_key``
 4. Run locally (Netlify Dev)
 This emulates the Netlify Functions environment locally.
 
-netlify dev
+```netlify dev```
+
+5. Deploy (Netlify Deploy)
+
+```netlify deploy --prod```
 
 The API will likely be available at http://localhost:8888/.netlify/functions/api
