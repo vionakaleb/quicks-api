@@ -58,25 +58,25 @@ create table public.conversations (
 
 To run this project locally, ensure you have Node.js and the Netlify CLI installed.
 
-Clone the repository
+### 1. Clone the repository
 
 ``git clone [https://github.com/vionakaleb/quicks-api.git](https://github.com/vionakaleb/quicks-api.git)
 cd quicks-api``
 
 
-Install dependencies
+### 2. Install dependencies
 
 ``npm install``
 
 
-Configure Environment Variables
+### 3. Configure Environment Variables
 Create a .env file in the root directory and add your Supabase credentials:
 
 ``SUPABASE_URL=your_supabase_url
 SUPABASE_KEY=your_supabase_anon_key
 GEMINI_API_KEY=your_gemini_api_key``
 
-Run locally (Netlify Dev)
+4. Run locally (Netlify Dev)
 This emulates the Netlify Functions environment locally.
 
 netlify dev
